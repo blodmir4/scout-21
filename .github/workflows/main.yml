@@ -1,0 +1,48 @@
+name: Obfuscar e Publicar no Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-obfuscate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Ofuscador
+        run: npm install -g javascript-obfuscator
+
+      - name: Ofuscar arquivos JS e HTML
+        run: |
+          # Se houver arquivos .js, eles serão ofuscados
+          # Se o código estiver dentro do index.html, ele tentará processar
+          javascript-obfuscator ./ --output ./dist --compact true --self-defending true
+
+      - name: Upload para o GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # Envia apenas a pasta com o código ofuscado
+
+  deploy:
+    needs: build-and-obfuscate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy para o GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
